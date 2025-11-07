@@ -1,34 +1,16 @@
 services:
   dante:
-    image: debian:bookworm-slim
-    container_name: dante-socks5
-    restart: unless-stopped
-    command: >
-      bash -c "apt-get update -qq &&
-               apt-get install -y -qq dante-server &&
-               danted -f /etc/danted.conf -d 1"
-    volumes:
-      - ./danted.conf:/etc/danted.conf
-    expose:
-      - "1080"
-    networks:
-      - proxy-net
-
-  stunnel:
-    image: alpine:latest
-    container_name: stunnel-tls
+    build: .
+    container_name: socks5-proxy
     restart: unless-stopped
     ports:
-      - "443:443"
+      - "443:1080"
     volumes:
-      - ./stunnel.conf:/etc/stunnel/stunnel.conf
-      - ./certs:/etc/stunnel/certs
-    command: ["stunnel", "/etc/stunnel/stunnel.conf"]
-    depends_on:
-      - dante
-    networks:
-      - proxy-net
-
-networks:
-  proxy-net:
-    driver: bridge
+      - ./danted.conf:/etc/danted.conf
+    environment:
+      - PROXY_USER=proxyuser
+      - PROXY_PASS=changeme123
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv4.ip_forward=1

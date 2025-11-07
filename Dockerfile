@@ -5,8 +5,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY danted.conf /etc/danted.conf
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-EXPOSE 443/tcp 443/udp
+EXPOSE 1080
 
-# Ejecutar en foreground (-D eliminado)
-CMD ["danted", "-f", "/etc/danted.conf", "-d", "1"]
+ENTRYPOINT ["/entrypoint.sh"]
