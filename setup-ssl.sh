@@ -86,16 +86,8 @@ certbot certonly --standalone \
 # Actualizar stunnel.conf con el dominio
 echo ""
 echo "📝 Configurando stunnel..."
-sed -i "s|DOMAIN|$DOMAIN|g" stunnel.conf
-
-# Actualizar docker-compose.yml con el dominio
-if ! grep -q "DOMAIN=$DOMAIN" docker-compose.yml; then
-    sed -i "/environment:/a\      - DOMAIN=$DOMAIN" docker-compose.yml
-fi
-
-# Crear directorio para certificados en Docker
-mkdir -p ./letsencrypt
-cp -rL /etc/letsencrypt/live /etc/letsencrypt/archive /etc/letsencrypt/renewal /etc/letsencrypt/options-ssl-nginx.conf /etc/letsencrypt/ssl-dhparams.pem ./letsencrypt/ 2>/dev/null || true
+# Reemplazar cualquier dominio existente o DOMAIN placeholder
+sed -i "s|/etc/letsencrypt/live/[^/]*/|/etc/letsencrypt/live/$DOMAIN/|g" stunnel.conf
 
 echo ""
 echo "✅ Certificado obtenido exitosamente!"
@@ -106,7 +98,11 @@ echo ""
 
 # Configurar renovación automática
 echo "🔄 Configurando renovación automática..."
-(crontab -l 2>/dev/null; echo "0 0 * * * certbot renew --quiet --deploy-hook 'docker compose -f $(pwd)/docker-compose.yml restart stunnel'") | crontab -
+COMPOSE_DIR=$(pwd)
+# Eliminar cron job anterior si existe
+(crontab -l 2>/dev/null | grep -v "certbot renew") | crontab - 2>/dev/null || true
+# Agregar nuevo cron job
+(crontab -l 2>/dev/null; echo "0 0 * * * certbot renew --quiet --deploy-hook 'cd $COMPOSE_DIR && docker compose restart stunnel-tls'") | crontab -
 
 echo ""
 echo "=================================================="
