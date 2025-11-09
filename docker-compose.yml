@@ -3,8 +3,8 @@ services:
     build: .
     container_name: socks5-proxy
     restart: unless-stopped
-    expose:
-      - "1080"
+    ports:
+      - "127.0.0.1:1080:1080"
     volumes:
       - ./danted.conf:/etc/danted.conf
     environment:
