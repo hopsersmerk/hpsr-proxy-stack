@@ -17,12 +17,26 @@ services:
     networks:
       - proxy-net
 
+  squid:
+    image: ubuntu/squid:latest
+    container_name: squid-https
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    volumes:
+      - ./squid.conf:/etc/squid/squid.conf:ro
+      - ./squid-passwd:/etc/squid/passwd:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    networks:
+      - proxy-net
+    command: sh -c "squid -N -f /etc/squid/squid.conf"
+
   stunnel:
     image: alpine:latest
     container_name: stunnel-tls
     restart: unless-stopped
     ports:
-      - "443:443"
+      - "1443:443"
     volumes:
       - ./stunnel.conf:/etc/stunnel/stunnel.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro

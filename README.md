@@ -1,13 +1,15 @@
-# Proxy SOCKS5 con Docker y TLS/SSL
+# Servidor Proxy con Docker y TLS/SSL
 
-Servidor proxy SOCKS5 con autenticación basado en Dante, configurado para ejecutarse en tu VPS y permitirte navegar con la IP del servidor.
+Servidor proxy HTTPS/SOCKS5 con autenticación, configurado para ejecutarse en tu VPS y permitirte navegar con la IP del servidor.
 
 **✨ Características:**
+- 🌐 **Proxy HTTPS** - Compatible con navegadores y Proxy SwitchyOmega
 - 🔐 Autenticación por usuario/contraseña
 - 🔒 Cifrado TLS/SSL con certificados de Let's Encrypt
-- 🌐 Compatible con dominios personalizados
+- 🌍 Compatible con dominios personalizados (cualquier TLD: .com, .dev, .net, etc.)
 - 🔄 Renovación automática de certificados
 - 🚀 Fácil configuración con scripts automatizados
+- 📦 Incluye también proxy SOCKS5 con Dante
 
 ## 🚀 Instalación y Configuración
 
@@ -80,77 +82,94 @@ Deberías ver: `Iniciando servidor SOCKS5...`
 
 ## 🧪 Probar el Proxy
 
-### Con SSL/TLS (si usaste setup-ssl.sh):
+### Proxy HTTPS (Recomendado - Puerto 443)
 
-**Desde el servidor VPS:**
+**Desde tu PC o servidor:**
 ```bash
-curl --proxy socks5h://proxyuser:changeme123@proxy.tudominio.com:443 https://ifconfig.me
+# Probar conexión HTTPS
+curl --proxy https://proxyuser:changeme123@proxy.tudominio.com:443 https://ifconfig.me
+
+# O con -k si tienes problemas con el certificado
+curl -k --proxy https://proxyuser:changeme123@proxy.tudominio.com:443 https://ifconfig.me
 ```
 
-**Desde tu PC:**
+**Resultado esperado:** Deberías ver la IP de tu VPS.
+
+### Proxy SOCKS5 con SSH Tunnel (Alternativa)
+
+Si prefieres usar SOCKS5:
+
+1. **Crear túnel SSH:**
+   ```bash
+   ssh -N -L 1080:localhost:1080 usuario@proxy.tudominio.com
+   ```
+
+2. **Probar conexión:**
+   ```bash
+   curl --proxy socks5h://proxyuser:changeme123@localhost:1080 https://ifconfig.me
+   ```
+
+### Proxy SOCKS5 sobre TLS (Puerto 1443)
+
+**Requiere cliente stunnel instalado en tu PC:**
 ```bash
-# Reemplaza proxy.tudominio.com con tu dominio
-curl --proxy socks5h://proxyuser:changeme123@proxy.tudominio.com:443 https://ifconfig.me
+curl --proxy socks5h://proxyuser:changeme123@proxy.tudominio.com:1443 https://ifconfig.me
 ```
 
-**Nota:** Usa `socks5h://` (con 'h') para que el DNS se resuelva en el proxy, no en tu PC.
-
-### Sin SSL/TLS (solo desarrollo):
-
-**Desde el servidor VPS:**
-```bash
-curl --proxy socks5://proxyuser:changeme123@localhost:443 http://ifconfig.me
-```
-
-**Desde tu PC:**
-```bash
-curl --proxy socks5://proxyuser:changeme123@IP_DEL_VPS:443 http://ifconfig.me
-```
-
-**Resultado esperado:** Deberías ver la IP de tu VPS en lugar de tu IP local.
+**Nota:** Este método requiere configuración adicional de stunnel en el cliente.
 
 ## 🌐 Configurar en Navegadores
 
-### Firefox:
-1. Instala la extensión **FoxyProxy**
-2. Configuración → Añadir Proxy
-3. Título: `Mi Proxy VPS`
-4. Tipo: `SOCKS5`
-5. Hostname: `proxy.tudominio.com` (o IP si no usas SSL)
-6. Puerto: `443`
-7. Usuario: `proxyuser`
-8. Contraseña: `changeme123`
+### ✅ Opción 1: Proxy HTTPS (Recomendado - Funciona Directamente)
 
-⚠️ **Nota sobre SSL/TLS:** Los navegadores no pueden conectarse directamente a SOCKS5+TLS. Necesitas:
-- **Opción 1:** Usar el proxy con `curl` o aplicaciones de terminal
-- **Opción 2:** Crear un túnel SSH local (ver sección abajo)
-- **Opción 3:** Usar extensiones que soporten stunnel client-side
+#### Chrome/Edge con Proxy SwitchyOmega:
+1. Instala la extensión **[Proxy SwitchyOmega](https://chrome.google.com/webstore/detail/proxy-switchyomega/padekgcemlokbadohgkifijomclgjgif)**
+2. Clic en el ícono → **Options**
+3. **New profile** → Nombre: `VPS Proxy` → **Proxy Profile**
+4. Configuración:
+   - **Protocol**: `HTTPS`
+   - **Server**: `proxy.tudominio.com` (tu dominio)
+   - **Port**: `443`
+5. Expande **Authentication** (abajo):
+   - **Username**: `proxyuser`
+   - **Password**: `changeme123`
+6. **Apply changes**
+7. Clic en el ícono de SwitchyOmega → Selecciona `VPS Proxy`
 
-### Chrome/Edge con Proxy SwitchyOmega:
-1. Instala la extensión **Proxy SwitchyOmega**
-2. Nuevo perfil → Tipo: `SOCKS5`
-3. Servidor: `proxy.tudominio.com` (o IP)
-4. Puerto: `443`
-5. Usuario: `proxyuser`
-6. Contraseña: `changeme123`
+🎉 **¡Listo!** Ahora todo tu tráfico irá por el proxy con SSL en el puerto 443.
 
-**Mismo problema SSL/TLS:** Ver soluciones arriba.
+#### Firefox con FoxyProxy:
+1. Instala la extensión **[FoxyProxy](https://addons.mozilla.org/es/firefox/addon/foxyproxy-standard/)**
+2. Clic en el ícono → **Options**
+3. **Add** → **Manual Proxy Configuration**
+4. Configuración:
+   - **Title**: `VPS Proxy`
+   - **Type**: `HTTP` (Firefox trata HTTPS como HTTP con auth)
+   - **Hostname**: `proxy.tudominio.com`
+   - **Port**: `443`
+   - **Username**: `proxyuser`
+   - **Password**: `changeme123`
+5. **Save**
+6. Activa el proxy desde el menú de FoxyProxy
 
-### Solución: Túnel SSH Local (Recomendado para navegadores)
+### 🔧 Opción 2: Proxy SOCKS5 con SSH Tunnel
 
-Si quieres usar el proxy con SSL en navegadores, crea un túnel SSH local:
+Si prefieres usar SOCKS5 con cifrado SSH:
 
-```bash
-# En tu PC, crea un túnel local
-ssh -L 1080:localhost:443 usuario@tu-vps.com
+1. **Crea un túnel SSH local** (deja esta terminal abierta):
+   ```bash
+   ssh -N -L 1080:localhost:1080 usuario@proxy.tudominio.com
+   ```
 
-# Ahora configura el navegador para usar:
-# Servidor: localhost
-# Puerto: 1080
-# Tipo: SOCKS5
-```
+2. **Configura el navegador:**
+   - **Tipo**: `SOCKS5`
+   - **Servidor**: `localhost`
+   - **Puerto**: `1080`
+   - **Usuario**: `proxyuser`
+   - **Contraseña**: `changeme123`
 
-Esto crea un túnel cifrado SSH que reenvía al proxy con SSL.
+**Ventaja:** Doble capa de cifrado (SSH + TLS)
+**Desventaja:** Requiere mantener conexión SSH abierta
 
 ### Configuración del sistema (Linux):
 ```bash
@@ -161,28 +180,45 @@ export ALL_PROXY=socks5h://proxyuser:changeme123@proxy.tudominio.com:443
 export ALL_PROXY=socks5://proxyuser:changeme123@IP_DEL_VPS:443
 ```
 
-## 🔒 ¿Cómo funciona el SSL/TLS con SOCKS5?
+## 🔒 Arquitectura y Seguridad
 
-SOCKS5 por sí mismo **NO tiene soporte nativo para TLS/SSL**. Sin embargo, este proyecto usa **stunnel** para tunelizar el tráfico SOCKS5 sobre TLS:
+Este proyecto ofrece **dos tipos de proxy**:
 
+### 1️⃣ Proxy HTTPS (Squid) - Puerto 443
 ```
-┌─────────┐   TLS/SSL    ┌──────────┐   SOCKS5   ┌───────┐
-│ Cliente │─────────────▶│ stunnel  │───────────▶│ Dante │───▶ Internet
-│  (tu PC)│   cifrado    │ (puerto  │  sin cifrar│(proxy)│
-└─────────┘   (443)      │   443)   │  (interno) └───────┘
-                         └──────────┘
+┌─────────┐   HTTPS/SSL  ┌──────────┐
+│ Cliente │─────────────▶│  Squid   │───▶ Internet
+│  (tu PC)│   cifrado    │  (443)   │
+└─────────┘              └──────────┘
 ```
 
 **Ventajas:**
-- ✅ Conexión cifrada de extremo a extremo hasta el proxy
-- ✅ Certificado válido de Let's Encrypt (evita advertencias)
-- ✅ Parece tráfico HTTPS normal (bypass firewalls)
-- ✅ Protege contra inspección de paquetes (DPI)
+- ✅ Compatible nativamente con navegadores y extensiones
+- ✅ Certificado válido de Let's Encrypt
+- ✅ Parece tráfico HTTPS normal
+- ✅ No requiere configuración adicional en el cliente
+- ✅ Autenticación HTTP Basic integrada
 
-**Para qué sirve:**
+**Uso ideal:**
+- Proxy SwitchyOmega, FoxyProxy
+- Configuración de proxy en navegadores
+- Aplicaciones que soportan proxies HTTPS
+
+### 2️⃣ Proxy SOCKS5 (Dante) - Puerto 1080 interno
+
+Para uso con SSH tunnel o acceso directo:
+
+```
+┌─────────┐   SSH Tunnel ┌──────────┐   SOCKS5   ┌───────┐
+│ Cliente │─────────────▶│   SSH    │───────────▶│ Dante │───▶ Internet
+│  (tu PC)│   cifrado    │  (VPS)   │  interno   │(1080) │
+└─────────┘              └──────────┘            └───────┘
+```
+
+**Para qué sirve el SSL:**
 - Redes corporativas que bloquean proxies sin SSL
 - ISPs que hacen inspección profunda de paquetes
-- Países con censura que detectan y bloquean SOCKS5
+- Países con censura que detectan y bloquean proxies
 - Evitar que tu ISP sepa que usas un proxy
 
 ## 🔐 Seguridad
@@ -207,24 +243,35 @@ sudo iptables -A INPUT -p tcp --dport 443 -j DROP
 
 ## 📂 Archivos del Proyecto
 
+**Proxy HTTPS (Squid):**
+- `squid.conf` → Configuración del proxy HTTPS con SSL
+- `squid-passwd` → Archivo de contraseñas (generado automáticamente)
+- `setup-squid-auth.sh` → Script para cambiar credenciales de Squid
+
+**Proxy SOCKS5 (Dante):**
 - `Dockerfile` → Imagen Docker con Dante SOCKS5
-- `docker-compose.yml` → Configuración de despliegue (Dante + stunnel)
 - `danted.conf` → Configuración del servidor Dante
 - `entrypoint.sh` → Script que crea usuarios y arranca Dante
-- `stunnel.conf` → Configuración de stunnel para TLS
+- `stunnel.conf` → Configuración de stunnel para SOCKS5+TLS
+
+**General:**
+- `docker-compose.yml` → Configuración de despliegue (Squid + Dante + stunnel)
 - `setup-ssl.sh` → Script automatizado para obtener certificados SSL
 
 ## 🐛 Solución de Problemas
 
 ### Ver logs:
 ```bash
-# Logs de stunnel (TLS)
-docker logs -f stunnel-tls
+# Logs de Squid (proxy HTTPS)
+docker logs -f squid-https
 
-# Logs de Dante (SOCKS5)
+# Logs de Dante (proxy SOCKS5)
 docker logs -f socks5-proxy
 
-# Ambos
+# Logs de stunnel (TLS para SOCKS5)
+docker logs -f stunnel-tls
+
+# Todos
 docker compose logs -f
 ```
 
@@ -280,12 +327,46 @@ docker compose logs -f
 
 ### El navegador no se conecta con SSL:
 - **Problema:** Los navegadores no soportan SOCKS5+TLS directamente
-- **Solución:** Usa un túnel SSH local (ver sección "Configurar en Navegadores")
+- **Solución:** Usa el proxy HTTPS (Squid) en puerto 443 o un túnel SSH local
 
 ### Verificar que SSL está funcionando:
 ```bash
-# Desde tu PC
+# Verificar certificado SSL
 openssl s_client -connect tudominio.com:443 -showcerts
 
 # Deberías ver el certificado de Let's Encrypt
+
+# Probar proxy HTTPS directamente
+curl -k --proxy https://proxyuser:changeme123@tudominio.com:443 https://ifconfig.me
+```
+
+### Problemas con Squid (proxy HTTPS):
+
+1. **Error 407 Proxy Authentication Required:**
+   - Las credenciales son incorrectas
+   - Verifica el archivo `squid-passwd`
+   - Cambia credenciales: `sudo bash setup-squid-auth.sh`
+   - Reinicia: `docker compose restart squid-https`
+
+2. **Error de certificado SSL:**
+   - Ejecuta: `sudo bash setup-ssl.sh`
+   - Asegúrate de que el dominio apunta al servidor
+   - Reinicia: `docker compose restart squid-https`
+
+3. **Squid no arranca:**
+   - Ver logs: `docker logs squid-https`
+   - Verifica permisos: `ls -la squid-passwd squid.conf`
+   - Verifica sintaxis: `docker exec squid-https squid -k parse`
+
+### Probar conectividad paso a paso:
+
+```bash
+# 1. Verificar que Squid responde
+curl -I http://proxy.tudominio.com:443
+
+# 2. Probar autenticación (debe pedir credenciales)
+curl --proxy https://proxy.tudominio.com:443 https://ifconfig.me
+
+# 3. Probar con credenciales
+curl --proxy https://proxyuser:changeme123@proxy.tudominio.com:443 https://ifconfig.me
 ```

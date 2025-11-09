@@ -91,6 +91,13 @@ sed -i "s|{DOMAIN}|$DOMAIN|g" stunnel.conf
 # Por si acaso ya tiene un dominio configurado, también reemplazar el path completo
 sed -i "s|/etc/letsencrypt/live/[^/{}]*/|/etc/letsencrypt/live/$DOMAIN/|g" stunnel.conf
 
+# Actualizar squid.conf con el dominio
+echo "📝 Configurando squid..."
+# Reemplazar {DOMAIN} placeholder con el dominio real
+sed -i "s|{DOMAIN}|$DOMAIN|g" squid.conf
+# Por si acaso ya tiene un dominio configurado, también reemplazar el path completo
+sed -i "s|/etc/letsencrypt/live/[^/{}]*/|/etc/letsencrypt/live/$DOMAIN/|g" squid.conf
+
 echo ""
 echo "✅ Certificado obtenido exitosamente!"
 echo ""
@@ -106,6 +113,23 @@ COMPOSE_DIR=$(pwd)
 # Agregar nuevo cron job
 (crontab -l 2>/dev/null; echo "0 0 * * * certbot renew --quiet --deploy-hook 'cd $COMPOSE_DIR && docker compose restart stunnel-tls'") | crontab -
 
+# Configurar autenticación de Squid
+echo ""
+echo "🔐 Configurando autenticación de Squid..."
+if [ ! -f "squid-passwd" ]; then
+    # Instalar apache2-utils si no está disponible
+    if ! command -v htpasswd &> /dev/null; then
+        echo "📦 Instalando apache2-utils..."
+        apt-get install -y apache2-utils > /dev/null 2>&1
+    fi
+    # Crear archivo de contraseñas con credenciales por defecto
+    htpasswd -b -c squid-passwd "proxyuser" "changeme123" > /dev/null 2>&1
+    echo "   Credenciales por defecto creadas: proxyuser / changeme123"
+    echo "   (Puedes cambiarlas ejecutando: sudo bash setup-squid-auth.sh)"
+else
+    echo "   Archivo de contraseñas ya existe"
+fi
+
 echo ""
 echo "=================================================="
 echo "✅ ¡Configuración completada!"
@@ -114,8 +138,22 @@ echo ""
 echo "Ahora ejecuta:"
 echo "  docker compose up -d"
 echo ""
-echo "Para probar la conexión:"
-echo "  curl --proxy socks5h://proxyuser:changeme123@$DOMAIN:443 https://ifconfig.me"
+echo "📌 Proxy HTTPS (recomendado - compatible con navegadores):"
+echo "   Tipo: HTTPS"
+echo "   Servidor: $DOMAIN"
+echo "   Puerto: 443"
+echo "   Usuario: proxyuser"
+echo "   Contraseña: changeme123"
+echo ""
+echo "   Probar con curl:"
+echo "   curl --proxy https://proxyuser:changeme123@$DOMAIN:443 https://ifconfig.me"
+echo ""
+echo "📌 Proxy SOCKS5 con SSH tunnel (alternativa):"
+echo "   1. Crear túnel: ssh -N -L 1080:localhost:1080 usuario@$DOMAIN"
+echo "   2. Configurar proxy: localhost:1080"
+echo ""
+echo "📌 Proxy SOCKS5 sobre TLS (puerto 1443):"
+echo "   Requiere stunnel en el cliente"
 echo ""
 echo "Nota: El certificado se renovará automáticamente cada 90 días"
 echo ""
