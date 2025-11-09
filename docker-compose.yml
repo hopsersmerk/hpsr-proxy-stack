@@ -27,7 +27,7 @@ services:
     networks:
       - proxy-net
     entrypoint: []
-    command: ["squid", "-N", "-f", "/etc/squid/squid.conf"]
+    command: ["sh", "-c", "squid -N -f /etc/squid/squid.conf -d 9 2>&1 || (echo 'Squid failed, testing config:' && squid -k parse -f /etc/squid/squid.conf)"]
 
   stunnel-squid:
     image: alpine:latest
