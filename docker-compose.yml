@@ -26,7 +26,7 @@ services:
       - ./squid-passwd:/etc/squid/passwd:ro
     networks:
       - proxy-net
-    command: sh -c "squid -NYC -f /etc/squid/squid.conf"
+    command: sh -c "squid -N -f /etc/squid/squid.conf 2>&1"
 
   stunnel-squid:
     image: alpine:latest
