@@ -14,7 +14,7 @@ Servidor proxy SOCKS5 con autenticación basado en Dante, configurado para ejecu
 ### Opción A: Con SSL/TLS (Recomendado)
 
 **Prerrequisitos:**
-- Un dominio que apunte a tu servidor VPS (ej: `proxy.hopsersmerk.dev`)
+- Un dominio que apunte a tu servidor VPS (ej: `proxy.tudominio.com`, `proxy.tudominio.dev`, etc.)
 - Puerto 80 y 443 abiertos en el firewall
 
 **Pasos:**
@@ -23,10 +23,12 @@ Servidor proxy SOCKS5 con autenticación basado en Dante, configurado para ejecu
    ```bash
    sudo bash setup-ssl.sh
    ```
-   El script te pedirá tu dominio y automáticamente:
+   El script te pedirá tu dominio (puede ser .com, .dev, .net, o cualquier TLD) y automáticamente:
    - Obtendrá certificados SSL de Let's Encrypt
    - Configurará stunnel con TLS
    - Configurará renovación automática
+
+   **Nota:** Puedes usar cualquier dominio o subdominio que poseas, siempre que apunte a la IP de tu VPS.
 
 2. **Configurar credenciales:**
    Edita `docker-compose.yml`:

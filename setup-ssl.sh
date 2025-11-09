@@ -14,7 +14,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Solicitar dominio
-echo "Ingresa tu dominio (ejemplo: proxy.hopsersmerk.dev):"
+echo "Ingresa tu dominio completo (ej: proxy.tudominio.com, proxy.tudominio.dev, etc.):"
 read -p "Dominio: " DOMAIN
 
 if [ -z "$DOMAIN" ]; then
@@ -86,8 +86,10 @@ certbot certonly --standalone \
 # Actualizar stunnel.conf con el dominio
 echo ""
 echo "📝 Configurando stunnel..."
-# Reemplazar cualquier dominio existente o DOMAIN placeholder
-sed -i "s|/etc/letsencrypt/live/[^/]*/|/etc/letsencrypt/live/$DOMAIN/|g" stunnel.conf
+# Reemplazar {DOMAIN} placeholder con el dominio real
+sed -i "s|{DOMAIN}|$DOMAIN|g" stunnel.conf
+# Por si acaso ya tiene un dominio configurado, también reemplazar el path completo
+sed -i "s|/etc/letsencrypt/live/[^/{}]*/|/etc/letsencrypt/live/$DOMAIN/|g" stunnel.conf
 
 echo ""
 echo "✅ Certificado obtenido exitosamente!"
