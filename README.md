@@ -11,6 +11,11 @@ Servidor proxy HTTPS/SOCKS5 con autenticación, configurado para ejecutarse en t
 - 🚀 Fácil configuración con scripts automatizados
 - 📦 Incluye también proxy SOCKS5 con Dante
 
+**🔑 Credenciales por defecto:**
+- **Usuario**: `proxyuser`
+- **Contraseña**: `changeme123`
+- ⚠️ **IMPORTANTE**: Cambia estas credenciales después de la instalación (ver sección "Cambiar credenciales")
+
 ## 🚀 Instalación y Configuración
 
 ### Opción A: Con SSL/TLS (Recomendado)
@@ -32,23 +37,28 @@ Servidor proxy HTTPS/SOCKS5 con autenticación, configurado para ejecutarse en t
 
    **Nota:** Puedes usar cualquier dominio o subdominio que poseas, siempre que apunte a la IP de tu VPS.
 
-2. **Configurar credenciales:**
-   Edita `docker-compose.yml`:
-   ```yaml
-   environment:
-     - PROXY_USER=tuusuario
-     - PROXY_PASS=tucontraseña
-   ```
-
-3. **Iniciar servicios:**
+2. **Iniciar servicios:**
    ```bash
    docker compose up -d
    ```
 
-4. **Verificar:**
+3. **Verificar que todo esté funcionando:**
    ```bash
-   docker logs -f stunnel-tls
-   docker logs -f socks5-proxy
+   docker ps  # Todos los contenedores deben estar "Up"
+   docker logs stunnel-https  # Debe mostrar "Configuration successful"
+   docker logs squid-proxy    # No debe haber errores FATAL
+   ```
+
+4. **Probar el proxy:**
+   ```bash
+   curl --proxy https://proxyuser:changeme123@proxy.tudominio.com:443 https://ifconfig.me
+   ```
+   Deberías ver la IP de tu VPS.
+
+5. **Cambiar credenciales (RECOMENDADO):**
+   ```bash
+   sudo bash setup-squid-auth.sh
+   docker compose restart squid-proxy stunnel-https
    ```
 
 ### Opción B: Sin SSL/TLS (Solo desarrollo)
@@ -323,10 +333,18 @@ docker compose logs -f
    ```
 
 ### Cambiar credenciales:
-1. Edita `docker-compose.yml`
+
+**Para el proxy HTTPS (Squid) en puerto 443:**
+```bash
+sudo bash setup-squid-auth.sh
+docker compose restart squid-proxy stunnel-https
+```
+
+**Para el proxy SOCKS5 (Dante) en puerto 1080:**
+1. Edita `docker-compose.yml` (sección de variables de entorno)
 2. Reconstruye:
    ```bash
-   docker compose up -d --force-recreate
+   docker compose up -d --force-recreate dante
    ```
 
 ### El navegador no se conecta con SSL:
