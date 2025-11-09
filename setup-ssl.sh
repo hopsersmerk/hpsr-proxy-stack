@@ -83,20 +83,19 @@ certbot certonly --standalone \
         exit 1
     }
 
-# Actualizar stunnel.conf con el dominio
+# Actualizar archivos de configuración con el dominio
 echo ""
-echo "📝 Configurando stunnel..."
+echo "📝 Configurando stunnel para SOCKS5..."
 # Reemplazar {DOMAIN} placeholder con el dominio real
 sed -i "s|{DOMAIN}|$DOMAIN|g" stunnel.conf
 # Por si acaso ya tiene un dominio configurado, también reemplazar el path completo
 sed -i "s|/etc/letsencrypt/live/[^/{}]*/|/etc/letsencrypt/live/$DOMAIN/|g" stunnel.conf
 
-# Actualizar squid.conf con el dominio
-echo "📝 Configurando squid..."
+echo "📝 Configurando stunnel para Squid..."
 # Reemplazar {DOMAIN} placeholder con el dominio real
-sed -i "s|{DOMAIN}|$DOMAIN|g" squid.conf
+sed -i "s|{DOMAIN}|$DOMAIN|g" stunnel-squid.conf
 # Por si acaso ya tiene un dominio configurado, también reemplazar el path completo
-sed -i "s|/etc/letsencrypt/live/[^/{}]*/|/etc/letsencrypt/live/$DOMAIN/|g" squid.conf
+sed -i "s|/etc/letsencrypt/live/[^/{}]*/|/etc/letsencrypt/live/$DOMAIN/|g" stunnel-squid.conf
 
 echo ""
 echo "✅ Certificado obtenido exitosamente!"
@@ -110,8 +109,8 @@ echo "🔄 Configurando renovación automática..."
 COMPOSE_DIR=$(pwd)
 # Eliminar cron job anterior si existe
 (crontab -l 2>/dev/null | grep -v "certbot renew") | crontab - 2>/dev/null || true
-# Agregar nuevo cron job
-(crontab -l 2>/dev/null; echo "0 0 * * * certbot renew --quiet --deploy-hook 'cd $COMPOSE_DIR && docker compose restart stunnel-tls'") | crontab -
+# Agregar nuevo cron job para reiniciar ambos servicios stunnel
+(crontab -l 2>/dev/null; echo "0 0 * * * certbot renew --quiet --deploy-hook 'cd $COMPOSE_DIR && docker compose restart stunnel-https stunnel-socks'") | crontab -
 
 # Configurar autenticación de Squid
 echo ""

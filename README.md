@@ -184,12 +184,12 @@ export ALL_PROXY=socks5://proxyuser:changeme123@IP_DEL_VPS:443
 
 Este proyecto ofrece **dos tipos de proxy**:
 
-### 1️⃣ Proxy HTTPS (Squid) - Puerto 443
+### 1️⃣ Proxy HTTPS (stunnel + Squid) - Puerto 443
 ```
-┌─────────┐   HTTPS/SSL  ┌──────────┐
-│ Cliente │─────────────▶│  Squid   │───▶ Internet
-│  (tu PC)│   cifrado    │  (443)   │
-└─────────┘              └──────────┘
+┌─────────┐   HTTPS/SSL  ┌──────────┐   HTTP    ┌───────┐
+│ Cliente │─────────────▶│ stunnel  │──────────▶│ Squid │───▶ Internet
+│  (tu PC)│   cifrado    │  (443)   │ (interno) │(3128) │
+└─────────┘              └──────────┘           └───────┘
 ```
 
 **Ventajas:**
@@ -243,16 +243,17 @@ sudo iptables -A INPUT -p tcp --dport 443 -j DROP
 
 ## 📂 Archivos del Proyecto
 
-**Proxy HTTPS (Squid):**
-- `squid.conf` → Configuración del proxy HTTPS con SSL
+**Proxy HTTPS (stunnel + Squid):**
+- `squid.conf` → Configuración del proxy HTTP (sin SSL, stunnel lo maneja)
 - `squid-passwd` → Archivo de contraseñas (generado automáticamente)
+- `stunnel-squid.conf` → Configuración de stunnel para HTTPS en puerto 443
 - `setup-squid-auth.sh` → Script para cambiar credenciales de Squid
 
 **Proxy SOCKS5 (Dante):**
 - `Dockerfile` → Imagen Docker con Dante SOCKS5
 - `danted.conf` → Configuración del servidor Dante
 - `entrypoint.sh` → Script que crea usuarios y arranca Dante
-- `stunnel.conf` → Configuración de stunnel para SOCKS5+TLS
+- `stunnel.conf` → Configuración de stunnel para SOCKS5+TLS en puerto 1443
 
 **General:**
 - `docker-compose.yml` → Configuración de despliegue (Squid + Dante + stunnel)
@@ -262,14 +263,17 @@ sudo iptables -A INPUT -p tcp --dport 443 -j DROP
 
 ### Ver logs:
 ```bash
-# Logs de Squid (proxy HTTPS)
-docker logs -f squid-https
+# Logs de stunnel (HTTPS en puerto 443)
+docker logs -f stunnel-https
+
+# Logs de Squid (proxy HTTP)
+docker logs -f squid-proxy
 
 # Logs de Dante (proxy SOCKS5)
 docker logs -f socks5-proxy
 
-# Logs de stunnel (TLS para SOCKS5)
-docker logs -f stunnel-tls
+# Logs de stunnel (SOCKS5+TLS en puerto 1443)
+docker logs -f stunnel-socks
 
 # Todos
 docker compose logs -f
@@ -346,17 +350,17 @@ curl -k --proxy https://proxyuser:changeme123@tudominio.com:443 https://ifconfig
    - Las credenciales son incorrectas
    - Verifica el archivo `squid-passwd`
    - Cambia credenciales: `sudo bash setup-squid-auth.sh`
-   - Reinicia: `docker compose restart squid-https`
+   - Reinicia: `docker compose restart squid-proxy`
 
 2. **Error de certificado SSL:**
    - Ejecuta: `sudo bash setup-ssl.sh`
    - Asegúrate de que el dominio apunta al servidor
-   - Reinicia: `docker compose restart squid-https`
+   - Reinicia: `docker compose restart stunnel-https`
 
 3. **Squid no arranca:**
-   - Ver logs: `docker logs squid-https`
+   - Ver logs: `docker logs squid-proxy`
    - Verifica permisos: `ls -la squid-passwd squid.conf`
-   - Verifica sintaxis: `docker exec squid-https squid -k parse`
+   - Verifica sintaxis: `docker exec squid-proxy squid -k parse`
 
 ### Probar conectividad paso a paso:
 

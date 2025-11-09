@@ -19,21 +19,35 @@ services:
 
   squid:
     image: ubuntu/squid:latest
-    container_name: squid-https
+    container_name: squid-proxy
     restart: unless-stopped
-    ports:
-      - "443:443"
     volumes:
       - ./squid.conf:/etc/squid/squid.conf:ro
       - ./squid-passwd:/etc/squid/passwd:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
     networks:
       - proxy-net
     command: sh -c "squid -N -f /etc/squid/squid.conf"
 
-  stunnel:
+  stunnel-squid:
     image: alpine:latest
-    container_name: stunnel-tls
+    container_name: stunnel-https
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    volumes:
+      - ./stunnel-squid.conf:/etc/stunnel/stunnel.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - squid
+    networks:
+      - proxy-net
+    command: >
+      sh -c "apk add --no-cache stunnel &&
+             stunnel /etc/stunnel/stunnel.conf"
+
+  stunnel-socks:
+    image: alpine:latest
+    container_name: stunnel-socks
     restart: unless-stopped
     ports:
       - "1443:443"
