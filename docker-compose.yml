@@ -18,7 +18,7 @@ services:
       - proxy-net
 
   stunnel:
-    image: dweomer/stunnel
+    image: alpine:latest
     container_name: stunnel-tls
     restart: unless-stopped
     ports:
@@ -30,7 +30,9 @@ services:
       - dante
     networks:
       - proxy-net
-    command: stunnel /etc/stunnel/stunnel.conf
+    command: >
+      sh -c "apk add --no-cache stunnel &&
+             stunnel /etc/stunnel/stunnel.conf"
 
 networks:
   proxy-net:
