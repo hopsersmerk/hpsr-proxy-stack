@@ -14,7 +14,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Solicitar dominio
-echo "Ingresa tu dominio (ejemplo: proxy.hopsersmerk.dev):"
+echo "Ingresa tu dominio completo (ej: proxy.tudominio.com, proxy.tudominio.dev, etc.):"
 read -p "Dominio: " DOMAIN
 
 if [ -z "$DOMAIN" ]; then
@@ -83,19 +83,19 @@ certbot certonly --standalone \
         exit 1
     }
 
-# Actualizar stunnel.conf con el dominio
+# Actualizar archivos de configuración con el dominio
 echo ""
-echo "📝 Configurando stunnel..."
-sed -i "s|DOMAIN|$DOMAIN|g" stunnel.conf
+echo "📝 Configurando stunnel para SOCKS5..."
+# Reemplazar {DOMAIN} placeholder con el dominio real
+sed -i "s|{DOMAIN}|$DOMAIN|g" stunnel.conf
+# Por si acaso ya tiene un dominio configurado, también reemplazar el path completo
+sed -i "s|/etc/letsencrypt/live/[^/{}]*/|/etc/letsencrypt/live/$DOMAIN/|g" stunnel.conf
 
-# Actualizar docker-compose.yml con el dominio
-if ! grep -q "DOMAIN=$DOMAIN" docker-compose.yml; then
-    sed -i "/environment:/a\      - DOMAIN=$DOMAIN" docker-compose.yml
-fi
-
-# Crear directorio para certificados en Docker
-mkdir -p ./letsencrypt
-cp -rL /etc/letsencrypt/live /etc/letsencrypt/archive /etc/letsencrypt/renewal /etc/letsencrypt/options-ssl-nginx.conf /etc/letsencrypt/ssl-dhparams.pem ./letsencrypt/ 2>/dev/null || true
+echo "📝 Configurando stunnel para Squid..."
+# Reemplazar {DOMAIN} placeholder con el dominio real
+sed -i "s|{DOMAIN}|$DOMAIN|g" stunnel-squid.conf
+# Por si acaso ya tiene un dominio configurado, también reemplazar el path completo
+sed -i "s|/etc/letsencrypt/live/[^/{}]*/|/etc/letsencrypt/live/$DOMAIN/|g" stunnel-squid.conf
 
 echo ""
 echo "✅ Certificado obtenido exitosamente!"
@@ -106,7 +106,28 @@ echo ""
 
 # Configurar renovación automática
 echo "🔄 Configurando renovación automática..."
-(crontab -l 2>/dev/null; echo "0 0 * * * certbot renew --quiet --deploy-hook 'docker compose -f $(pwd)/docker-compose.yml restart stunnel'") | crontab -
+COMPOSE_DIR=$(pwd)
+# Eliminar cron job anterior si existe
+(crontab -l 2>/dev/null | grep -v "certbot renew") | crontab - 2>/dev/null || true
+# Agregar nuevo cron job para reiniciar ambos servicios stunnel
+(crontab -l 2>/dev/null; echo "0 0 * * * certbot renew --quiet --deploy-hook 'cd $COMPOSE_DIR && docker compose restart stunnel-https stunnel-socks'") | crontab -
+
+# Configurar autenticación de Squid
+echo ""
+echo "🔐 Configurando autenticación de Squid..."
+if [ ! -f "squid-passwd" ]; then
+    # Instalar apache2-utils si no está disponible
+    if ! command -v htpasswd &> /dev/null; then
+        echo "📦 Instalando apache2-utils..."
+        apt-get install -y apache2-utils > /dev/null 2>&1
+    fi
+    # Crear archivo de contraseñas con credenciales por defecto
+    htpasswd -b -c squid-passwd "proxyuser" "changeme123" > /dev/null 2>&1
+    echo "   Credenciales por defecto creadas: proxyuser / changeme123"
+    echo "   (Puedes cambiarlas ejecutando: sudo bash setup-squid-auth.sh)"
+else
+    echo "   Archivo de contraseñas ya existe"
+fi
 
 echo ""
 echo "=================================================="
@@ -116,8 +137,22 @@ echo ""
 echo "Ahora ejecuta:"
 echo "  docker compose up -d"
 echo ""
-echo "Para probar la conexión:"
-echo "  curl --proxy socks5h://proxyuser:changeme123@$DOMAIN:443 https://ifconfig.me"
+echo "📌 Proxy HTTPS (recomendado - compatible con navegadores):"
+echo "   Tipo: HTTPS"
+echo "   Servidor: $DOMAIN"
+echo "   Puerto: 443"
+echo "   Usuario: proxyuser"
+echo "   Contraseña: changeme123"
+echo ""
+echo "   Probar con curl:"
+echo "   curl --proxy https://proxyuser:changeme123@$DOMAIN:443 https://ifconfig.me"
+echo ""
+echo "📌 Proxy SOCKS5 con SSH tunnel (alternativa):"
+echo "   1. Crear túnel: ssh -N -L 1080:localhost:1080 usuario@$DOMAIN"
+echo "   2. Configurar proxy: localhost:1080"
+echo ""
+echo "📌 Proxy SOCKS5 sobre TLS (puerto 1443):"
+echo "   Requiere stunnel en el cliente"
 echo ""
 echo "Nota: El certificado se renovará automáticamente cada 90 días"
 echo ""

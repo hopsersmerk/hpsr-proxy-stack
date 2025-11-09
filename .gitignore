@@ -1,5 +1,6 @@
 logs/
 passwd
+squid-passwd
 .env
 *.bak
 *.log
