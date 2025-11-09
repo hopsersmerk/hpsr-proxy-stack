@@ -3,8 +3,8 @@ services:
     build: .
     container_name: socks5-proxy
     restart: unless-stopped
-    ports:
-      - "443:1080"
+    expose:
+      - "1080"
     volumes:
       - ./danted.conf:/etc/danted.conf
     environment:
@@ -14,3 +14,24 @@ services:
       - NET_ADMIN
     sysctls:
       - net.ipv4.ip_forward=1
+    networks:
+      - proxy-net
+
+  stunnel:
+    image: dweomer/stunnel
+    container_name: stunnel-tls
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    volumes:
+      - ./stunnel.conf:/etc/stunnel/stunnel.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - dante
+    networks:
+      - proxy-net
+    command: stunnel /etc/stunnel/stunnel.conf
+
+networks:
+  proxy-net:
+    driver: bridge
