@@ -1,0 +1,30 @@
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y hadolint yamllint
+          curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | bash -s v1.7.1
+      - name: Lint Dockerfiles
+        run: hadolint Dockerfile || true
+      - name: Lint YAML
+        run: yamllint -d "{extends:default,rules:{line-length:{max:140}}}" .
+      - name: Lint GitHub Actions
+        run: ./actionlint -color
+
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build images (dry-run)
+        run: |
+          docker build -t hpsr/socks5:test -f Dockerfile .
+          docker compose config
