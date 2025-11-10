@@ -1,0 +1,33 @@
+name: Bug report
+description: Reporta un bug en HPSR Proxy Stack
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: ¿Qué pasó?
+      description: Cuéntanos el comportamiento actual y el esperado.
+      placeholder: Error 407, no autentica con Squid...
+    validations: { required: true }
+  - type: input
+    id: version
+    attributes:
+      label: Versión / commit
+      placeholder: v0.1.0 o commit abc123
+  - type: dropdown
+    id: env
+    attributes:
+      label: Entorno
+      options: [Ubuntu 24.04, Debian 12, Otros]
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      placeholder: 1) docker compose up -d 2) ...
+      render: bash
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs relevantes
+      description: Adjunta `docker logs` (stunnel, squid, dante).
+      render: bash
