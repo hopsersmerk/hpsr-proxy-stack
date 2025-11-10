@@ -1,3 +1,12 @@
+# HPSR Proxy Stack — HTTPS & SOCKS5 con TLS y Auth
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Made with Docker](https://img.shields.io/badge/made%20with-Docker-informational)](https://www.docker.com/)
+[![Issues](https://img.shields.io/github/issues/hopsersmerk/hpsr-proxy-stack)](../../issues)
+[![Stars](https://img.shields.io/github/stars/hopsersmerk/hpsr-proxy-stack)](../../stargazers)
+
+Stack Docker para levantar **Proxy HTTPS (stunnel+Squid)** en 443 y **SOCKS5 (Dante)**, con **autenticación**, **certificados Let’s Encrypt** y scripts de setup.
+
+
 # Servidor Proxy con Docker y TLS/SSL
 
 Servidor proxy HTTPS/SOCKS5 con autenticación, configurado para ejecutarse en tu VPS y permitirte navegar con la IP del servidor.
@@ -201,6 +210,15 @@ Este proyecto ofrece **dos tipos de proxy**:
 │  (tu PC)│   cifrado    │  (443)   │ (interno) │(3128) │
 └─────────┘              └──────────┘           └───────┘
 ```
+
+### Puertos expuestos
+| Servicio                | Puerto contenedor | Puerto público | Notas                      |
+|-------------------------|-------------------|----------------|----------------------------|
+| stunnel (HTTPS→Squid)   | 443               | 443            | Tráfico HTTPS con auth     |
+| Squid (HTTP interno)    | 3128              | —              | Solo interno en la red     |
+| Dante (SOCKS5)          | 1080              | —              | Úsalo con túnel SSH        |
+| stunnel (SOCKS5+TLS)    | 1443              | 1443           | Cliente stunnel requerido  |
+
 
 **Ventajas:**
 - ✅ Compatible nativamente con navegadores y extensiones
